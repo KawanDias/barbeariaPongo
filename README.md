@@ -74,12 +74,3 @@ O ID determinístico de `bookings` e a transação `createBooking` evitam double
 Para promover o primeiro administrador, crie o usuário pelo Firebase Authentication e adicione manualmente `users/{uid}` no Firestore com `role: "admin"`. Usuários novos são criados como `cliente` pelo `AuthProvider`; a regra Firestore impede escrita administrativa por clientes.
 
 O e-mail `barbeariapongo@gmail.com` é reconhecido como administrador no cliente e nas regras Firestore. A senha da conta deve ser criada/atualizada no Firebase Authentication (não é armazenada no código ou no repositório); configure-a no Console do Firebase com a política de senha desejada.
-
-Para ativar o acesso mestre, no Firebase Console habilite o provedor **E-mail/senha** e crie:
-
-```text
-E-mail: barbeariapongo@gmail.com
-Senha: definida localmente em `NEXT_PUBLIC_LOCAL_ADMIN_PASSWORD`
-```
-
-O código não simula uma sessão nem mantém a senha no navegador: o Firebase valida a credencial. Depois de um login válido com esse e-mail, o `AuthProvider` atribui `admin` e `/login` redireciona para `/admin`. Cadastros comuns são autenticados automaticamente pelo Firebase e recebem `role: "cliente"`.
