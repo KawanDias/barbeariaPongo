@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { AuthProvider } from "@/components/AuthProvider";
+import { BookingProvider } from "@/components/BookingProvider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 export const metadata: Metadata = {
@@ -16,5 +17,5 @@ export const metadata: Metadata = {
   }
 };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="pt-BR"><body className={inter.variable}><AuthProvider><main>{children}</main><InstallPrompt /></AuthProvider></body></html>;
+  return <html lang="pt-BR"><body className={inter.variable}><AuthProvider><BookingProvider><main>{children}</main><InstallPrompt /></BookingProvider></AuthProvider></body></html>;
 }

@@ -13,8 +13,16 @@ export type LocalUser = {
   displayName: string;
   email: string;
   photoURL: string | null;
+  phone?: string;
+  cpf?: string;
+  birthDate?: string;
+  address?: UserAddress;
+  favorites: FavoriteItem[];
+  lastLoginAt?: string;
 };
 
+export type UserAddress = { cep: string; street: string; number: string; neighborhood: string; city: string; reference: string };
+export type FavoriteItem = { id: string; type: "product" | "portfolio"; name: string; imageUrl: string; priceCents: number; serviceId?: string };
 type StoredUser = LocalUser & { password: string; role: UserRole };
 type AuthContextValue = {
   user: LocalUser | null;
@@ -23,6 +31,10 @@ type AuthContextValue = {
   loginEmail: (email: string, password: string) => Promise<void>;
   signupEmail: (name: string, email: string, password: string) => Promise<void>;
   loginGoogle: () => Promise<void>;
+  logout: () => void;
+  updateProfile: (changes: Partial<Omit<LocalUser, "uid" | "email" | "favorites">>) => void;
+  changePassword: (currentPassword: string, newPassword: string) => void;
+  toggleFavorite: (item: FavoriteItem) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -42,7 +54,7 @@ function saveUsers(users: StoredUser[]) {
 }
 
 function publicUser(stored: StoredUser): LocalUser {
-  return { uid: stored.uid, displayName: stored.displayName, email: stored.email, photoURL: stored.photoURL };
+  return { uid: stored.uid, displayName: stored.displayName, email: stored.email, photoURL: stored.photoURL, phone: stored.phone, cpf: stored.cpf, birthDate: stored.birthDate, address: stored.address, favorites: stored.favorites ?? [], lastLoginAt: stored.lastLoginAt };
 }
 
 function isValidEmail(email: string) {
@@ -53,12 +65,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<LocalUser | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
+  function persistUser(changes: Partial<StoredUser>) {
+    if (!user) return;
+    const current = readUsers().find((candidate) => candidate.uid === user.uid);
+    if (!current) return;
+    const updated = { ...current, ...changes };
+    saveUsers(readUsers().map((candidate) => candidate.uid === user.uid ? updated : candidate));
+    setUser(publicUser(updated));
+    setRole(updated.role);
+  }
 
   useEffect(() => {
     const session = localStorage.getItem(SESSION_KEY);
     if (session) {
       const stored = readUsers().find((candidate) => candidate.uid === session);
       if (stored) {
+        stored.lastLoginAt = new Date().toISOString();
+        saveUsers(readUsers().map((candidate) => candidate.uid === stored?.uid ? stored : candidate));
         setUser(publicUser(stored));
         setRole(stored.role);
       } else {
@@ -84,7 +107,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: ADMIN_EMAIL,
           photoURL: null,
           password: ADMIN_PASSWORD,
-          role: "admin"
+          role: "admin",
+          favorites: []
         };
         stored.role = "admin";
         saveUsers([...users.filter((candidate) => candidate.uid !== stored?.uid), stored]);
@@ -92,6 +116,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!stored || stored.password !== password) throw new Error("INVALID_CREDENTIALS");
       localStorage.setItem(SESSION_KEY, stored.uid);
+      stored.lastLoginAt = new Date().toISOString();
+      saveUsers(readUsers().map((candidate) => candidate.uid === stored?.uid ? stored : candidate));
       setUser(publicUser(stored));
       setRole(stored.role);
     },
@@ -108,7 +134,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         photoURL: null,
         password,
-        role: "cliente"
+        role: "cliente",
+        favorites: []
       };
       saveUsers([...readUsers(), stored]);
       localStorage.setItem(SESSION_KEY, stored.uid);
@@ -117,6 +144,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     loginGoogle: async () => {
       throw new Error("GOOGLE_LOGIN_UNAVAILABLE");
+    },
+    logout: () => {
+      localStorage.removeItem(SESSION_KEY);
+      setUser(null);
+      setRole(null);
+    },
+    updateProfile: (changes) => persistUser(changes),
+    changePassword: (currentPassword, newPassword) => {
+      if (!user) throw new Error("NOT_AUTHENTICATED");
+      if (newPassword.length < 6) throw new Error("WEAK_PASSWORD");
+      const stored = readUsers().find((candidate) => candidate.uid === user.uid);
+      if (!stored || stored.password !== currentPassword) throw new Error("INVALID_CURRENT_PASSWORD");
+      persistUser({ password: newPassword });
+    },
+    toggleFavorite: (item) => {
+      if (!user) throw new Error("NOT_AUTHENTICATED");
+      const favorites = user.favorites.some((favorite) => favorite.id === item.id && favorite.type === item.type)
+        ? user.favorites.filter((favorite) => !(favorite.id === item.id && favorite.type === item.type))
+        : [...user.favorites, item];
+      persistUser({ favorites });
     }
   }), [loading, role, user]);
 
