@@ -1,0 +1,13 @@
+{
+  "name": "A Barbearia do Pongo",
+  "short_name": "Barbearia Pongo",
+  "description": "Agende seu corte e confira as novidades da Barbearia do Pongo.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#151515",
+  "theme_color": "#151515",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

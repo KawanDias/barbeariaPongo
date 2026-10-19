@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+:root { color-scheme: dark; }
+html, body { font-family: var(--font-inter), Inter, Arial, sans-serif; }
+body { @apply bg-ink text-white; }
+.field { @apply w-full rounded-xl border border-white/10 bg-ink/70 px-4 py-3 text-white outline-none transition focus:border-gold focus:ring-2 focus:ring-gold/30; }
+.field option { @apply bg-ink text-white; }
